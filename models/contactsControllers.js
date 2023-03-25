@@ -1,122 +1,120 @@
-const fs = require("fs").promises;
-const path = require("path");
-const shortid = require("shortid");
+const {
+  getAllContacts,
+  getContactById,
+  createContact,
+  removeContact,
+  updateContacts,
+} = require("../service/contactsMetods");
 
-const contactsPath = path.join(__dirname, `../models/contacts.json`);
-
-const listContacts = async (req, res) => {
+const getAll = async (req, res, next) => {
   try {
-    const contactsString = await fs.readFile(contactsPath, "utf-8");
-    const contacts = JSON.parse(contactsString);
+    const contacts = await getAllContacts();
 
     res.json({ contacts, status: "success" });
-  } catch (error) {
-    console.log("Errore");
+  } catch (e) {
+    console.error(e);
+    next(e);
   }
 };
 
-const getContactById = async (req, res) => {
+const getById = async (req, res, next) => {
+  const { contactId } = req.params;
   try {
-    const data = await fs.readFile(contactsPath, "utf-8");
-    const contacts = JSON.parse(data);
-    const [contact] = contacts.filter(
-      (i) => Number(i.id) === Number(req.params.contactId)
-    );
+    const contact = await getContactById(contactId);
 
     if (!contact) res.status(404).json({ message: "Not found" });
 
     res.json({ contact, status: "success" });
-  } catch (error) {
-    console.error(error);
+  } catch (e) {
+    console.error(e);
+    next(e);
   }
 };
 
-const addContact = async (req, res) => {
+const create = async (req, res, next) => {
+  const { name, email, phone, favorite } = req.body;
   try {
-    const { name, email, phone } = req.body;
     if (!name || !email || !phone)
       res.status(400).json({ message: "missing required name field" });
 
-    const newContact = {
-      id: shortid(),
-      name,
-      email,
-      phone,
-    };
-
-    const data = await fs.readFile(contactsPath, "utf-8");
-    const contacts = JSON.parse(data);
-    contacts.push(newContact);
+    const newContact = await createContact(name, email, phone, favorite);
 
     res.status(201).json({ newContact, status: "success" });
-  } catch (error) {
-    console.error(error);
+  } catch (e) {
+    console.error(e);
+    next(e);
   }
 };
 
-const removeContact = async (req, res) => {
+const remove = async (req, res, next) => {
+  const { contactId } = req.params;
   try {
-    const data = await fs.readFile(contactsPath, "utf-8");
-    let contacts = JSON.parse(data);
-    const [contact] = contacts.filter(
-      (i) => Number(i.id) === Number(req.params.contactId)
-    );
+    const contact = await removeContact(contactId);
 
     if (!contact) res.status(404).json({ message: "Not found" });
 
-    contacts = contacts.filter(
-      (i) => Number(i.id) !== Number(req.params.contactId)
-    );
-
-    res.json({ message: "contact deleted", status: "success" });
-  } catch (error) {
-    console.error(error);
+    res.json({ contact, message: "contact deleted", status: "success" });
+  } catch (e) {
+    console.error(e);
+    next(e);
   }
 };
 
-const updateContact = async (req, res) => {
-  try {
-    const body = req.body;
-    const keys = Object.keys(body);
-    const bodyUpd = {};
+const update = async (req, res, next) => {
+  const { contactId } = req.params;
+  const body = req.body;
+  const keys = Object.keys(body);
+  const bodyUpd = {};
 
-    for (const key of keys) {
-      if (key === "name" || key === "email" || key === "phone") {
-        bodyUpd[key] = body[key];
-      }
+  for (const key of keys) {
+    if (key === "name" || key === "email" || key === "phone") {
+      bodyUpd[key] = body[key];
     }
+  }
 
-    if (Object.keys(bodyUpd).length === 0)
-      res.status(400).json({ message: "missing fields or correct fields" });
+  if (Object.keys(bodyUpd).length === 0) {
+    return res
+      .status(400)
+      .json({ message: "missing fields or correct fields" });
+  }
 
-    const data = await fs.readFile(contactsPath, "utf-8");
-    let contacts = JSON.parse(data);
-    const [contact] = contacts.filter(
-      (i) => Number(i.id) === Number(req.params.contactId)
-    );
+  try {
+    const contact = await updateContacts(contactId, bodyUpd);
 
     if (!contact) res.status(404).json({ message: "Not found" });
 
-    contacts = contacts.map((el) => {
-      if (Number(el.id) === Number(req.params.contactId)) {
-        const updContact = {
-          ...el,
-          ...bodyUpd,
-        };
-        res.json({ updContact, status: "success" });
-        return updContact;
-      }
-      return el;
-    });
-  } catch (error) {
-    console.error(error);
+    res.json({ contact, status: "success" });
+  } catch (e) {
+    console.error(e);
+    next(e);
+  }
+};
+
+const updateStatus = async (req, res, next) => {
+  const { contactId } = req.params;
+
+  if (Object.keys(req.body).length === 0)
+    return res.status(400).json({ message: "missing field favorite" });
+
+  const { favorite } = req.body;
+
+  try {
+    const contact = await updateContacts(contactId, { favorite });
+
+    if (!contact) res.status(404).json({ message: "Not found" });
+
+    res.json({ contact, status: "success" });
+  } catch (e) {
+    console.error(e);
+    next(e);
   }
 };
 
 module.exports = {
-  listContacts,
-  getContactById,
-  removeContact,
-  addContact,
-  updateContact,
+  getAll,
+  getById,
+  remove,
+  create,
+  update,
+  updateStatus,
 };
