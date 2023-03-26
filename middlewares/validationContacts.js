@@ -18,6 +18,7 @@ module.exports = {
         .pattern(/^[a-zA-Z0-9а-яА-Я ]{3,30}$/),
       email: Joi.string().min(4).max(30).email().required(),
       phone: Joi.string().min(7).max(30).required().pattern(regPhone),
+      favorite: Joi.boolean(),
     });
 
     validateResult(schema, req, res, next);
