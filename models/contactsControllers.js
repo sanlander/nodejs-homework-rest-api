@@ -4,13 +4,21 @@ const {
   createContact,
   removeContact,
   updateContacts,
+  getTotalContacts,
 } = require("../service/contactsMetods");
 
 const getAll = async (req, res, next) => {
-  try {
-    const contacts = await getAllContacts();
+  const { favorite, page, limit } = req.query;
 
-    res.json({ contacts, status: "success" });
+  const paginationPage = +page || 1;
+  const paginationlimit = +limit || 20;
+  const skip = (paginationPage - 1) * paginationlimit;
+
+  try {
+    const totalContacts = await getTotalContacts();
+    const contacts = await getAllContacts(favorite, skip, paginationlimit);
+
+    res.json({ totalContacts, contacts, status: "success" });
   } catch (e) {
     console.error(e);
     next(e);
@@ -33,11 +41,21 @@ const getById = async (req, res, next) => {
 
 const create = async (req, res, next) => {
   const { name, email, phone, favorite } = req.body;
+  const owner = req.user;
+
   try {
     if (!name || !email || !phone)
       res.status(400).json({ message: "missing required name field" });
+    console.log(typeof ownerId);
+    const contact = {
+      name,
+      email,
+      phone,
+      favorite,
+      owner,
+    };
 
-    const newContact = await createContact(name, email, phone, favorite);
+    const newContact = await createContact(contact);
 
     res.status(201).json({ newContact, status: "success" });
   } catch (e) {
