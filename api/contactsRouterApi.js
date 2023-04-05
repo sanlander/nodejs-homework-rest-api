@@ -6,6 +6,8 @@ const {
   addPutValidation,
 } = require("../middlewares/validationContacts");
 
+const { chekValidToken } = require("../middlewares/chekValidToken");
+
 const {
   getAll,
   getById,
@@ -14,6 +16,8 @@ const {
   update,
   updateStatus,
 } = require("../models/contactsControllers");
+
+router.use(chekValidToken);
 
 router.get("/", getAll);
 router.get("/:contactId", getById);

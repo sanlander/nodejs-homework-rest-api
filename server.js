@@ -3,14 +3,17 @@ const logger = require("morgan");
 const cors = require("cors");
 const mongoose = require("mongoose");
 
+const contactsRouter = require("./api/contactsRouterApi");
+const authRouter = require("./api/authRouter");
+
 require("dotenv").config();
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-const contactsRouter = require("./api/contactsRouterApi");
 app.use("/api/contacts", contactsRouter);
+app.use("/api/users", authRouter);
 
 const formatsLogger = app.get("env") === "development" ? "dev" : "short";
 app.use(logger(formatsLogger));

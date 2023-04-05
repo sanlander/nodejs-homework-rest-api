@@ -1,15 +1,27 @@
 const Contacts = require("./schemas/contactsSchema");
 
-const getAllContacts = async () => {
-  return Contacts.find();
+const getTotalContacts = async () => {
+  return await Contacts.count();
+};
+
+const getAllContacts = async (query, skip, paginationlimit) => {
+  const search = {};
+
+  if (query === "true") {
+    search.favorite = true;
+  }
+
+  return await Contacts.find(search).skip(skip).limit(paginationlimit);
 };
 
 const getContactById = async (id) => {
   return Contacts.findOne({ _id: id });
 };
 
-const createContact = async (name, email, phone, favorite) => {
-  return Contacts.create({ name, email, phone, favorite });
+const createContact = async (contact) => {
+  const { name, email, phone, favorite, owner } = contact;
+
+  return Contacts.create({ name, email, phone, favorite, owner });
 };
 
 const removeContact = (id) => {
@@ -26,4 +38,5 @@ module.exports = {
   createContact,
   removeContact,
   updateContacts,
+  getTotalContacts,
 };
