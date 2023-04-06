@@ -12,6 +12,9 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// serve static files
+app.use(express.static("public"));
+
 app.use("/api/contacts", contactsRouter);
 app.use("/api/users", authRouter);
 

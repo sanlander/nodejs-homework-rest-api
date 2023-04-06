@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const User = require("./schemas/usersSchema");
+const User = require("../schemas/usersSchema");
 
 const signToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -29,8 +29,15 @@ const checkUser = async (email, password) => {
   return user;
 };
 
-const updateUser = (id, token = null) => {
+const updateUserToken = (id, token = null) => {
   return User.findOneAndUpdate({ _id: id }, { $set: { token: `${token}` } });
+};
+
+const updateUserAvatar = async (id, url) => {
+  return User.findOneAndUpdate(
+    { _id: id },
+    { $set: { avatarURL: `${url}` } }
+  );
 };
 
 const findUser = async (id) => {
@@ -44,5 +51,6 @@ module.exports = {
   checkUser,
   signToken,
   findUser,
-  updateUser,
+  updateUserToken,
+  updateUserAvatar,
 };

@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const { findUser } = require("../service/usersMetods");
+const { findUser } = require("../service/metods/usersMetods");
 
 const chekValidToken = async (req, res, next) => {
   const token =
@@ -12,7 +12,8 @@ const chekValidToken = async (req, res, next) => {
 
     const currentUser = await findUser(decodedToken.id);
 
-    if (!currentUser) return res.status(401).json({ message: "Not authorized" });
+    if (!currentUser)
+      return res.status(401).json({ message: "Not authorized" });
 
     req.user = currentUser;
 

@@ -23,6 +23,7 @@ const usersSchema = new Schema(
       enum: Object.values(USER_ROLES_ENUM),
       default: USER_ROLES_ENUM.STARTER,
     },
+    avatarURL: String,
     token: {
       type: String,
       default: null,

@@ -5,7 +5,7 @@ const {
   removeContact,
   updateContacts,
   getTotalContacts,
-} = require("../service/contactsMetods");
+} = require("../service/metods/contactsMetods");
 
 const getAll = async (req, res, next) => {
   const { favorite, page, limit } = req.query;

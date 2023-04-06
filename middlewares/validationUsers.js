@@ -28,8 +28,6 @@ const loginValidateJoi = (req, res, next) => {
   validateResultJoi(schema, req, res, next);
 };
 
-
-
 module.exports = {
   addNewUserValidateJoi,
   loginValidateJoi,
