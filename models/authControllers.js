@@ -8,8 +8,12 @@ const {
   existsEmail,
   checkUser,
   signToken,
-  updateUserToken,
+  saveUserTokenInDB,
+  deleteUserTokenInDB,
   updateUserAvatar,
+  addResetToken,
+  checkResetToken,
+  updateUserPasswordInDB,
 } = require("../service/metods/usersMetods");
 const { heshPasswords } = require("../utils/heshPasswords");
 
@@ -65,7 +69,7 @@ const login = async (req, res, next) => {
 
     const token = signToken(id);
 
-    await updateUserToken(id, token);
+    await saveUserTokenInDB(id, token);
 
     res.status(200).json({
       token,
@@ -84,10 +88,10 @@ const login = async (req, res, next) => {
 Use after function "chekValidToken"
 */
 const logout = async (req, res, next) => {
-  const { id } = req.user;
-
   try {
-    await updateUserToken(id);
+    const { id } = req.user;
+
+    await deleteUserTokenInDB(id);
 
     res.status(204).json({ status: "success" });
   } catch (e) {
@@ -130,10 +134,67 @@ const avatar = async (req, res, next) => {
   });
 };
 
+// PASSWORD RESTORE
+const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    const resetToken = await addResetToken(email);
+
+    if (!resetToken)
+      return res
+        .status(400)
+        .json({ message: "There is no user with this email.." });
+
+    const resetUrl = `${req.protocol}://${req.get(
+      "host"
+    )}/api/users/reset-password/${resetToken}`;
+
+    /*
+    Send reset url to the user email
+  */
+    // console.log("||=============>>>>>>>>>>>");
+    // console.log(resetUrl);
+    // console.log("<<<<<<<<<<<=============||");
+
+    // res.sendStatus(200);
+    res.status(200).json({ resetUrl });
+  } catch (e) {
+    console.error(e);
+
+    next(e);
+  }
+};
+
+// resetPassword;
+const resetPassword = async (req, res, next) => {
+  try {
+    const otp = req.params.otp;
+    const user = await checkResetToken(otp);
+
+    if (!user) return res.status(400).json({ message: "Token is invalid.." });
+
+    const hashNewPassword = await heshPasswords(req.body.password);
+
+    await updateUserPasswordInDB(user.id, hashNewPassword);
+    user.password = undefined;
+
+    res.status(200).json({
+      user,
+    });
+  } catch (e) {
+    console.error(e);
+
+    next(e);
+  }
+};
+
 module.exports = {
   register,
   login,
   logout,
   current,
   avatar,
+  forgotPassword,
+  resetPassword,
 };

@@ -24,14 +24,14 @@ const usersSchema = new Schema(
       default: USER_ROLES_ENUM.STARTER,
     },
     avatarURL: String,
-    token: {
-      type: String,
-      default: null,
-    },
+    token: String,
+    passwordResetToken: String,
+    passwordResetExpires: Date,
   },
   { timestamps: true }
 );
 
+// Mongoose custom method
 usersSchema.methods.chekPassword = (candidate, hash) =>
   bcrypt.compare(candidate, hash);
 
