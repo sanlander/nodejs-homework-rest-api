@@ -16,31 +16,34 @@ const {
   updateUserPasswordInDB,
 } = require("../service/metods/usersMetods");
 const { heshPasswords } = require("../utils/heshPasswords");
+// const Email = require("../service/email/email");
 
 const register = async (req, res, next) => {
-  const { password, email } = req.body;
-
-  if (await existsEmail(email))
-    return res.status(409).json({ message: "Email in use" });
-
-  const hashPassword = await heshPasswords(password);
-
-  const avatarURL = `https:${gravatar.url(email, {
-    s: "100",
-    d: "wavatar",
-  })}`;
-
-  const user = {
-    ...req.body,
-    password: hashPassword,
-    subscription: USER_ROLES_ENUM.STARTER,
-    avatarURL,
-  };
-
   try {
+    const { password, email } = req.body;
+
+    if (await existsEmail(email))
+      return res.status(409).json({ message: "Email in use" });
+
+    const hashPassword = await heshPasswords(password);
+
+    const avatarURL = `https:${gravatar.url(email, {
+      s: "100",
+      d: "wavatar",
+    })}`;
+
+    const user = {
+      ...req.body,
+      password: hashPassword,
+      subscription: USER_ROLES_ENUM.STARTER,
+      avatarURL,
+    };
+    
     const newUser = await createUser(user);
 
     newUser.password = undefined;
+
+    // await new Email(newUser, "localhost:3000/ping").sendVerify();
 
     res.status(201).json({
       user: {
