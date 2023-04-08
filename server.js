@@ -1,4 +1,5 @@
 const express = require("express");
+const path = require("path");
 const logger = require("morgan");
 const cors = require("cors");
 const mongoose = require("mongoose");
@@ -12,10 +13,18 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// serve static files
+app.use(express.static("public"));
+
 app.use("/api/contacts", contactsRouter);
 app.use("/api/users", authRouter);
 
 const formatsLogger = app.get("env") === "development" ? "dev" : "short";
+
+// connect template engine
+// app.set("view engine", "pug");
+// app.set("views", path.join(__dirname, "views"));
+
 app.use(logger(formatsLogger));
 
 app.use((_, res, __) => {

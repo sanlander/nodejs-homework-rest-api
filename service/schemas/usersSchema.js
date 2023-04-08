@@ -23,14 +23,15 @@ const usersSchema = new Schema(
       enum: Object.values(USER_ROLES_ENUM),
       default: USER_ROLES_ENUM.STARTER,
     },
-    token: {
-      type: String,
-      default: null,
-    },
+    avatarURL: String,
+    token: String,
+    passwordResetToken: String,
+    passwordResetExpires: Date,
   },
   { timestamps: true }
 );
 
+// Mongoose custom method
 usersSchema.methods.chekPassword = (candidate, hash) =>
   bcrypt.compare(candidate, hash);
 

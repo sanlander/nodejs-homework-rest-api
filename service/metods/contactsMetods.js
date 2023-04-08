@@ -1,4 +1,4 @@
-const Contacts = require("./schemas/contactsSchema");
+const Contacts = require("../schemas/contactsSchema");
 
 const getTotalContacts = async () => {
   return await Contacts.count();
@@ -11,7 +11,10 @@ const getAllContacts = async (query, skip, paginationlimit) => {
     search.favorite = true;
   }
 
-  return await Contacts.find(search).skip(skip).limit(paginationlimit);
+  return await Contacts.find(search)
+    .skip(skip)
+    .limit(paginationlimit)
+    .populate("owner");
 };
 
 const getContactById = async (id) => {
