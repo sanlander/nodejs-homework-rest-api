@@ -19,7 +19,7 @@ const existsEmail = async (email) => {
 const checkUser = async (email, password) => {
   const user = await User.findOne({ email }).select("+password");
 
-  if (!user) return null;
+  if (!user || !user.verify) return null;
 
   const passwordIsValid = await user.chekPassword(password, user.password);
 
@@ -48,9 +48,8 @@ const findUserByID = async (id) => {
   return user;
 };
 
-const addResetToken = async (email, fields) => {
+const addResetToken = async (email) => {
   const user = await User.findOne({ email });
-
   if (!user) return undefined;
 
   const resetToken = crypto.randomBytes(32).toString("hex");
@@ -61,8 +60,9 @@ const addResetToken = async (email, fields) => {
     .digest("hex");
   user.passwordResetExpires = Date.now() + 10 * 60 * 1000;
 
-  await User.findOneAndUpdate(user.id, user, { new: true });
-  return resetToken;
+  await User.findOneAndUpdate({_id: user.id}, user, { new: true });
+
+  return { user, resetToken };
 };
 
 const checkResetToken = async (otp) => {
@@ -88,6 +88,30 @@ const updateUserPasswordInDB = async (id, newPassword) => {
   );
 };
 
+const checkVerifyEmail = async (verificationToken) => {
+  const user = await User.findOne({ verificationToken });
+
+  if (!user) return undefined;
+
+  user.verificationToken = null;
+  user.verify = true;
+
+  await User.updateMany(
+    { _id: user.id },
+    {
+      $set: { verificationToken: null, verify: true },
+    }
+  );
+
+  return user;
+};
+
+const findUserByEmail = async (email) => {
+  const user = await User.findOne({ email });
+
+  return user;
+};
+
 module.exports = {
   createUser,
   existsEmail,
@@ -100,4 +124,6 @@ module.exports = {
   updateUserAvatar,
   checkResetToken,
   updateUserPasswordInDB,
+  checkVerifyEmail,
+  findUserByEmail,
 };

@@ -1,6 +1,7 @@
 const gravatar = require("gravatar");
 const path = require("path");
 const Jimp = require("jimp");
+const uuid = require("uuid").v4;
 
 const { USER_ROLES_ENUM } = require("../constants/enums");
 const {
@@ -14,9 +15,11 @@ const {
   addResetToken,
   checkResetToken,
   updateUserPasswordInDB,
+  checkVerifyEmail,
+  findUserByEmail,
 } = require("../service/metods/usersMetods");
 const { heshPasswords } = require("../utils/heshPasswords");
-// const Email = require("../service/email/email");
+const Email = require("../service/email/email");
 
 const register = async (req, res, next) => {
   try {
@@ -26,7 +29,10 @@ const register = async (req, res, next) => {
       return res.status(409).json({ message: "Email in use" });
 
     const hashPassword = await heshPasswords(password);
-
+    const verificationToken = uuid();
+    const verificationUrl = `${req.protocol}://${req.get(
+      "host"
+    )}/api/users/verify/${verificationToken}`;
     const avatarURL = `https:${gravatar.url(email, {
       s: "100",
       d: "wavatar",
@@ -37,19 +43,21 @@ const register = async (req, res, next) => {
       password: hashPassword,
       subscription: USER_ROLES_ENUM.STARTER,
       avatarURL,
+      verificationToken,
     };
-    
+
     const newUser = await createUser(user);
 
     newUser.password = undefined;
 
-    // await new Email(newUser, "localhost:3000/ping").sendVerify();
+    await new Email(newUser, verificationUrl).sendVerify();
 
     res.status(201).json({
       user: {
-        email: email,
+        email,
         subscription: USER_ROLES_ENUM.STARTER,
         avatarURL,
+        verificationUrl,
       },
       status: "success",
     });
@@ -142,9 +150,9 @@ const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
 
-    const resetToken = await addResetToken(email);
+    const { user, resetToken } = await addResetToken(email);
 
-    if (!resetToken)
+    if (!user)
       return res
         .status(400)
         .json({ message: "There is no user with this email.." });
@@ -153,14 +161,8 @@ const forgotPassword = async (req, res, next) => {
       "host"
     )}/api/users/reset-password/${resetToken}`;
 
-    /*
-    Send reset url to the user email
-  */
-    // console.log("||=============>>>>>>>>>>>");
-    // console.log(resetUrl);
-    // console.log("<<<<<<<<<<<=============||");
-
-    // res.sendStatus(200);
+await new Email(user, resetUrl).sendPasswordReset();
+    
     res.status(200).json({ resetUrl });
   } catch (e) {
     console.error(e);
@@ -192,6 +194,57 @@ const resetPassword = async (req, res, next) => {
   }
 };
 
+const verifyByToken = async (req, res, next) => {
+  try {
+    const verificationToken = req.params.verificationToken;
+
+    const user = await checkVerifyEmail(verificationToken);
+
+    if (!user) return res.status(404).json({ message: "User not found.." });
+
+    res.status(200).json({
+      message: "Verification successful",
+      user,
+    });
+  } catch (e) {
+    console.error(e);
+
+    next(e);
+  }
+};
+
+const verifyByEmail = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email)
+      return res
+        .status(400)
+        .json({ message: "missing required field email.." });
+
+    const user = await findUserByEmail(email);
+
+    if (user.verify)
+      return res
+        .status(400)
+        .json({ message: "Verification has already been passed.." });
+
+    const verificationUrl = `${req.protocol}://${req.get(
+      "host"
+    )}/api/users/verify/${user.verificationToken}`;
+    
+    await new Email(user, verificationUrl).sendVerify();
+
+    res.status(200).json({
+      message: "Verification email sent again",
+      verificationUrl,
+    });
+  } catch (e) {
+    console.error(e);
+
+    next(e);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -200,4 +253,6 @@ module.exports = {
   avatar,
   forgotPassword,
   resetPassword,
+  verifyByToken,
+  verifyByEmail,
 };
