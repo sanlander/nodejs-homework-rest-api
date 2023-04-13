@@ -3,6 +3,7 @@ const path = require("path");
 const logger = require("morgan");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const socketIO = require("socket.io");
 
 const contactsRouter = require("./api/contactsRouterApi");
 const authRouter = require("./api/authRouter");
@@ -49,21 +50,48 @@ app.use((err, _, res, __) => {
 const PORT = process.env.PORT || 3000;
 const uriDb = process.env.DB_HOST;
 
-mongoose.Promise = global.Promise;
+// Mongo DB connection
+mongoose
+  .connect(uriDb)
+  .then((connection) => {
+    console.log("Mongo DB connected..");
+  })
+  .catch(() => {
+    console.error("DB is not connected..");
+  });
+// mongoose.Promise = global.Promise;
 
-const connection = mongoose.connect(uriDb, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
+// const connection = mongoose.connect(uriDb, {
+//   useNewUrlParser: true,
+//   useUnifiedTopology: true,
+// });
+
+const server = app.listen(PORT, function () {
+  console.log(`Server running. Use our API on port: ${PORT}`);
 });
 
-connection
-  .then(() => {
-    console.log("Database connection successful");
-    app.listen(PORT, function () {
-      console.log(`Server running. Use our API on port: ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.log(`Server not running. Error message: ${err.message}`);
-    process.exit(1);
+// Socket.io ===============================================
+const io = socketIO(server);
+
+const node = io.of("/node");
+
+node.on("connection", (socket) => {
+  socket.on("join", (data) => {
+    socket.join(data.room);
+
+    node.in(data.room).emit("message", `New user joined "${data.room}" room!`);
   });
+
+  socket.on("message", (data) => {
+    node.in(data.room).emit("message", data.msg);
+  });
+
+  socket.on("disconnecting", () => {
+    console.log("User disconnected");
+    const rooms = Array.from(socket.rooms);
+
+    rooms.forEach((el) => {
+      node.in(el).emit("message", `User disconnected with "${el}" room! :( `);
+    });
+  });
+});

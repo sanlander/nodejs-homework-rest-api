@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body>
+    <!-- Section Chat -->
+    <section class="section-chat">
+      <h1>Socket IO example</h1>
+      <div class="container">
+        <ul id="messages"></ul>
+
+        <form>
+          <div class="input-group">
+            <input id="msg" type="text" autocomplete="false" />
+            <button type="submit">send</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </body>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script>
+    const socket = io("/node");
+    const room = "python";
+
+    document.querySelector("form").addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      const msg = document.querySelector("#msg");
+
+      socket.emit("message", { msg: msg.value, room });
+
+      msg.value = "";
+    });
+
+    socket.on("message", (msg) => {
+      const messagesContainer = document.querySelector("#messages");
+
+      messagesContainer.insertAdjacentHTML("afterbegin", `<li>${msg}</li>`);
+    });
+
+    socket.on("connect", () => {
+      socket.emit("join", { room });
+    });
+  </script>
+
+  <!-- <script>
+    const btn = document.querySelector('button');
+
+    btn &&
+      btn.addEventListener('click', async (event) => {
+        const res = await fetch('http://localhost:3000/ping');
+
+        if (!res.ok) return;
+
+        const data = await res.json();
+
+        document.querySelector('button').innerText = data.msg + '!!';
+      });
+  </script> -->
+</html>
